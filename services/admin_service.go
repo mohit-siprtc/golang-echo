@@ -101,7 +101,7 @@ func (s *AdminService) GetAllAdmins(recordSize, offset int, gender string) ([]re
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
+	log.Println("------------Postgres GetAll Working-----------")
 	return movies, nil
 }
 

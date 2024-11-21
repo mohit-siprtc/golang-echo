@@ -5,11 +5,11 @@ package controller
 import (
 	"database/sql"
 	// "bookstore/response"
-	// "bookstore/services"
+
 	// "bookstore/manager"
 	"bookstore/manager"
 	"bookstore/request"
-	"bookstore/services"
+
 	"log"
 	"net/http"
 	"strconv"
@@ -27,16 +27,21 @@ import (
 // }
 
 var movieManager *manager.AdminManager
+var userManager *manager.UserManager
 
-var movieService *services.AdminService
+func SetManagers(uManager *manager.UserManager) {
+	userManager = uManager
+}
+
+// var movieService *services.AdminService
 
 func InitializeController(mgr *manager.AdminManager) {
 	movieManager = mgr
 }
 
-func InitializeControllerService(service *services.AdminService) {
-	movieService = service
-}
+// func InitializeControllerService(service *services.AdminService) {
+// 	movieService = service
+// }
 
 // Create the Admin table
 // err := model.CreateAdminTable(db);
@@ -60,8 +65,10 @@ func CreateAdmin(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
+	flag := c.QueryParam("flag")
+
 	// Call the AdminManager to create the movie
-	r, err := movieManager.CreateAdmin(req)
+	r, err := movieManager.CreateAdmin(req, flag)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -88,8 +95,13 @@ func GetAllAdmins(c echo.Context) error {
 		recordSize = -1 // Indicating to fetch all records
 	}
 	gender := c.QueryParam("gender")
+	flag := c.QueryParam("flag")
+
+	// Create a UserManager instance (ensure this is initialized properly)
+	// userManager := manager.NewUserManager(userService) // userService must be initialized elsewhere
+
 	// Call the Manager to fetch paginated movies
-	movies, err := movieManager.GetAllAdmins(page, recordSize, gender)
+	movies, err := movieManager.GetAllAdmins(userManager, page, recordSize, gender, flag)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

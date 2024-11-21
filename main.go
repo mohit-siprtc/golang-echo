@@ -15,6 +15,10 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
+
+	// "go.mongodb.org/mongo-driver/mongo"
+
+	"bookstore/config"
 )
 
 func main() {
@@ -39,14 +43,29 @@ func main() {
 		log.Fatalf("Failed to create Admin table: %v", err)
 	}
 
-	fmt.Println("Admin table created successfully!")
+	fmt.Println("Admin table created successfully! postgress")
+
 	// Initialize Service, Manager, and Controller
+
 	movieService := services.NewAdminService(db)          // Service handles database operations
 	adminManager := manager.NewAdminManager(movieService) // Manager handles business logic
 	controller.InitializeController(adminManager)         // Controller handles HTTP requests
 
+	config.ConnectDB()
+
+	userService := &services.UserService{}
+	userManager := manager.NewUserManager(userService)
+
+	controller.SetManagers(userManager)
+	// MongoDB connection setup
+	// mongoClient := config.ConnectDB()                             // Assuming you have a ConnectDB() function in your config package
+	// usersCollection := config.GetCollection(mongoClient, "users") // Get "users" collection from MongoDB
+	// booksCollection := config.GetCollection(mongoClient, "books") // Get "books" collection from MongoDB
+	// fmt.Println(usersCollection)
+
 	// Create Echo instance and setup routes
 	e := echo.New()
+
 	route.SetupRoutes(e) // Setup routes using the route package
 
 	// Start server

@@ -4,14 +4,15 @@ services:
  
   mongodb:
     image: mongo
-    container_name: mongodb
+    container_name: mongo-container
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-    # environment:
-    #   MONGO_INITDB_ROOT_USERNAME: root
-    #   MONGO_INITDB_ROOT_PASSWORD: example
+    environment: []
+    #  - MONGO_INITDB_ROOT_USERNAME: root
+    #  - MONGO_INITDB_ROOT_PASSWORD: admin
+    
 
 
   postgres:
@@ -29,5 +30,4 @@ services:
 volumes:
 
   mongodb_data:
-
   postgres_data:

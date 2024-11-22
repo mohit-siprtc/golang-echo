@@ -173,10 +173,10 @@ func (d *UserService) DeleteUser(id int) error {
 
 	// Check if any document was deleted
 	if result.DeletedCount == 0 {
-		return fmt.Errorf("no user found with ID %s", id)
+		return fmt.Errorf("no user found with ID %d", id)
 	}
 
-	log.Printf("User with ID %s successfully deleted", id)
+	log.Printf("User with ID %d successfully deleted", id)
 	return nil
 }
 

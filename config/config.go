@@ -16,31 +16,52 @@ import (
 
 var DB *mongo.Database
 
-// GetNextSequence function retrieves the next sequence number
-func GetNextSequence() (int, error) {
-	collection := DB.Collection("users")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+// func initializeCountersCollection() error {
+// 	countersCollection := DB.Collection("counters")
+// 	// Insert initial sequence values for different collections (e.g., "users", "admins")
+// 	_, err := countersCollection.InsertMany(context.Background(), []interface{}{
+// 		bson.M{"_id": "users", "sequence_value": 0},
+// 		bson.M{"_id": "admins", "sequence_value": 0},
+// 	})
+// 	return err
+// }
 
-	// Get the last inserted user document (assuming ID is an integer)
-	var lastUser struct {
-		ID int `bson:"id"`
-	}
+// // GetNextSequence function retrieves the next sequence number
+// func GetNextSequence(collectionName string) (int, error) {
+// 	// Get a reference to the 'counters' collection
+// 	countersCollection := DB.Collection("counters")
 
-	// Find the last inserted user document sorted by ID in descending order
-	err := collection.FindOne(ctx, bson.M{}, options.FindOne().SetSort(bson.M{"id": -1})).Decode(&lastUser)
-	if err != nil && err != mongo.ErrNoDocuments {
-		return 0, fmt.Errorf("failed to retrieve last user: %v", err)
-	}
+// 	// Find the document for the collection
+// 	filter := bson.M{"_id": collectionName}
+// 	update := bson.M{
+// 		"$inc": bson.M{"sequence_value": 1},
+// 	}
 
-	// If no user exists, start the ID from 1
-	if err == mongo.ErrNoDocuments {
-		return 1, nil
-	}
+// 	// Options to create the document if it doesn't exist
+// 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
-	// Return the next sequence (last ID + 1)
-	return lastUser.ID + 1, nil
-}
+// 	// Use FindAndModify to atomically update and retrieve the result
+// 	var result struct {
+// 		SequenceValue int `bson:"sequence_value"`
+// 	}
+
+// 	err := countersCollection.FindOneAndUpdate(
+// 		context.Background(),
+// 		filter,
+// 		update,
+// 		opts,
+// 	).Decode(&result)
+
+// 	if err != nil {
+// 		// If no document exists and insert operation fails, return error
+// 		if err == mongo.ErrNoDocuments {
+// 			return 0, errors.New("no documents found in counters collection")
+// 		}
+// 		return 0, err
+// 	}
+
+// 	return result.SequenceValue, nil
+// }
 
 // Load environment variables from .env file
 func loadEnv() {
@@ -78,6 +99,7 @@ func ConnectDB() {
 	}
 	DB = client.Database(os.Getenv("MONGO_DB_NAME"))
 	fmt.Println("Connected to MongoDB")
+	CreateCounterSeq()
 	// return client
 	// DB = client.Database(os.Getenv("MONGO_DB_NAME"))
 	fmt.Println(DB)
@@ -90,4 +112,27 @@ func GetCollection(client *mongo.Client, collectionName string) *mongo.Collectio
 		log.Fatal("MONGO_DB_NAME not set in .env")
 	}
 	return client.Database(dbName).Collection(collectionName)
+}
+func CreateCounterSeq() error {
+	collection := DB.Collection("counters") // Counter collection name
+
+	// Check if the sequence document exists
+	var result bson.M
+	err := collection.FindOne(context.Background(), bson.M{"_id": "restaurant_id"}).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		// Sequence document doesn't exist, create it with an initial value of 0
+		_, err = collection.InsertOne(context.Background(), bson.M{
+			"_id": "restaurant_id", // Unique identifier for the sequence
+			"seq": 0,               // Initial sequence value
+		})
+		if err != nil {
+			return fmt.Errorf("error creating counter sequence document: %v", err)
+		}
+		fmt.Println("Counter sequence document created with initial value.")
+	} else if err != nil {
+		return fmt.Errorf("error checking counter sequence document: %v", err)
+	} else {
+		fmt.Println("Counter sequence document already exists.")
+	}
+	return nil
 }

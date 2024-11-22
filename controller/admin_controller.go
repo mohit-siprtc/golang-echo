@@ -96,7 +96,6 @@ func GetAllAdmins(c echo.Context) error {
 	}
 	gender := c.QueryParam("gender")
 	flag := c.QueryParam("flag")
-
 	// Create a UserManager instance (ensure this is initialized properly)
 	// userManager := manager.NewUserManager(userService) // userService must be initialized elsewhere
 
@@ -115,8 +114,8 @@ func GetAdmin(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid movie ID"})
 	}
-
-	movie, err := movieManager.GetAdminByID(id)
+	flag := c.QueryParam("flag")
+	movie, err := movieManager.GetAdminByID(userManager, id, flag)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "Admin not found"})
@@ -124,12 +123,6 @@ func GetAdmin(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	// res := response.Response{
-	// 	ID:    movie.ID,
-	// 	Name:  movie.Name,
-	// 	Genre: movie.Genre,
-	// 	Price: movie.Price,
-	// }
 	return c.JSON(http.StatusOK, movie)
 }
 
@@ -143,10 +136,11 @@ func UpdateAdmin(c echo.Context) error {
 	req := new(request.Request)
 
 	// Bind the request data to the Admin struct
-	if err := c.Bind(req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 	}
 	req.ID = id
+	flag := c.QueryParam("flag")
 
 	// Validate the movie data
 	if err := req.Validate(); err != nil {
@@ -154,7 +148,7 @@ func UpdateAdmin(c echo.Context) error {
 	}
 
 	// Call the AdminManager to update the movie
-	err = movieManager.UpdateAdmin(req)
+	err = movieManager.UpdateAdmin(req, userManager, flag)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -168,8 +162,9 @@ func DeleteAdmin(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid movie ID"})
 	}
+	flag := c.QueryParam("flag")
 
-	err = movieManager.DeleteAdmin(id)
+	err = movieManager.DeleteAdmin(userManager, id, flag)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

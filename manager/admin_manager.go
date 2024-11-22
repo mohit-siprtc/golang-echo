@@ -7,7 +7,6 @@ import (
 	"bookstore/response"
 	"bookstore/services"
 	"fmt"
-	"strconv"
 
 	// "fmt"
 	"log"
@@ -133,21 +132,46 @@ func (m *AdminManager) GetAdminByID(u *UserManager, id int, flag string) (*respo
 	if flag == "true" {
 		return m.AdminService.GetAdminByID(id)
 	} else {
-		nextID, err := services.GetNextSequence("users") // "users" collection or "admins"
-		if err != nil {
-			return nil, fmt.Errorf("error getting next sequence: %v", err)
-		}
-		idStr := strconv.Itoa(nextID)
-		return u.UserService.GetUserByID(idStr)
+
+		// nextID, err := services.IncrementMongoId() // Using the sequence for users
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error getting next sequence: %v", err)
+		// }
+
+		// If you're dealing with integer IDs, there's no need to convert to string
+		// idStr := strconv.Itoa(nextID)
+
+		// Fetch the user by the generated ID string
+		return u.UserService.GetUserByID(id)
 	}
 }
 
 // UpdateAdmin modifies an existing Admin by calling the service
-func (m *AdminManager) UpdateAdmin(Admin *request.Request) error {
-	return m.AdminService.UpdateAdmin(Admin)
+func (m *AdminManager) UpdateAdmin(Admin *request.Request, u *UserManager, flag string) error {
+	if flag == "true" {
+		return m.AdminService.UpdateAdmin(Admin)
+	} else {
+		return u.UserService.UpdateUser(Admin)
+	}
+
 }
 
 // DeleteAdmin removes a Admin by ID by calling the service
-func (m *AdminManager) DeleteAdmin(id int) error {
-	return m.AdminService.DeleteAdmin(id)
+// func (m *AdminManager) DeleteAdmin(id int) error {
+// 	return m.AdminService.DeleteAdmin(id)
+// }
+
+func (m *AdminManager) DeleteAdmin(u *UserManager, id int, flag string) error {
+	if flag == "true" {
+		// Use the AdminService to delete the admin by ID
+		return m.AdminService.DeleteAdmin(id)
+	} else {
+		// Generate the next ID using MongoDB's sequence
+
+		// Convert the generated ID to a string
+		// idStr := strconv.Itoa(nextID)
+
+		// Use the UserService to delete the user by the generated ID string
+		return u.UserService.DeleteUser(id)
+	}
 }

@@ -6,15 +6,17 @@ import (
 	"bookstore/config"
 	"bookstore/request"
 	"bookstore/response"
+
+	// "bookstore/services"
 	"context"
-	"crypto/sha1"
-	"encoding/binary"
+
+	// "crypto/sha1"
+	// "encoding/binary"
 	"fmt"
 	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,15 +25,15 @@ type UserService struct {
 	db *mongo.Database
 }
 
-func objectIDToInt(oid primitive.ObjectID) int {
-	hash := sha1.Sum(oid[:])
-	return int(binary.BigEndian.Uint32(hash[:4])) // Use first 4 bytes of the hash
-}
+// func objectIDToInt(oid primitive.ObjectID) int {
+// 	hash := sha1.Sum(oid[:])
+// 	return int(binary.BigEndian.Uint32(hash[:4])) // Use first 4 bytes of the hash
+// }
 
 // new CreateUser function after using GetNextSequence
 func CreateUser(user *request.Request) (*response.Response, error) {
-	// Get the next sequence ID for the user collection
-	nextID, err := config.GetNextSequence("users")
+	// Get the next sequence ID for the "users" collection
+	nextID, err := IncrementMongoId() // Now passing "users"
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate ID for new user: %v", err)
 	}
@@ -45,7 +47,7 @@ func CreateUser(user *request.Request) (*response.Response, error) {
 	defer cancel()
 
 	// Insert the user document into MongoDB
-	result, err := collection.InsertOne(ctx, user)
+	_, err = collection.InsertOne(ctx, user) // Don't need to capture result if not using it
 	if err != nil {
 		return nil, err
 	}
@@ -62,31 +64,6 @@ func CreateUser(user *request.Request) (*response.Response, error) {
 
 	return res, nil
 }
-
-//old function which was working currectly without giving id
-// func CreateUser(movie *request.Request) (*response.Response, error) {
-// 	collection := config.DB.Collection("users")
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
-
-// 	result, err := collection.InsertOne(ctx, movie)
-// 	if err != nil {
-// 		return &response.Response{}, err
-// 	}
-
-// 	insertedID := result.InsertedID.(primitive.ObjectID)
-// 	intID := objectIDToInt(insertedID) // Call the function here
-// 	res := &response.Response{
-// 		// ID: insertedID.Hex(),
-// 		ID:     intID,
-// 		Name:   movie.Name,
-// 		Gender: movie.Gender,
-// 		Age:    movie.Age,
-// 	}
-// 	log.Println("Service close MongoDB")
-
-// 	return res, nil
-// }
 
 func (d *UserService) GetAllSUsers(recordSize int, offset int, gender string) ([]response.Response, error) {
 	log.Println("Service: GetAllSUsers")
@@ -138,17 +115,17 @@ func (d *UserService) GetAllSUsers(recordSize int, offset int, gender string) ([
 }
 
 // GetUserByID retrieves a user by their ID from the MongoDB users collection.
-func (d *UserService) GetUserByID(id string) (*response.Response, error) {
+func (d *UserService) GetUserByID(id int) (*response.Response, error) {
 	log.Println("Service: GetUserByID")
 
 	// Convert string ID to MongoDB ObjectID
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
+	// objectID, err := primitive.ObjectIDFromHex(id)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Set up MongoDB query filter
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"_id": id}
 
 	// Perform the query on the "users" collection
 	collection := config.DB.Collection("users")
@@ -157,11 +134,105 @@ func (d *UserService) GetUserByID(id string) (*response.Response, error) {
 
 	var user response.Response
 
-	err = collection.FindOne(ctx, filter).Decode(&user)
+	err := collection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
 		return nil, err
 	}
 
 	// Return the user document
 	return &user, nil
+}
+func (d *UserService) UpdateUser(req *request.Request) error {
+	log.Println("Service: UpdateUser")
+
+	// Set up MongoDB query filter
+	filter := bson.M{"_id": req.ID}
+
+	// Specify the update operation
+	update := bson.M{"$set": bson.M{
+		"ID":     req.ID,
+		"Name":   req.Name,
+		"Gender": req.Gender,
+		"age":    req.Age,
+	}}
+
+	// Perform the update operation on the "users" collection
+	collection := config.DB.Collection("users")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %v", err)
+	}
+
+	// Check if any document was updated
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no user found with ID %d", req.ID)
+	}
+
+	log.Printf("User with ID %d successfully updated", req.ID)
+	return nil
+}
+func (d *UserService) DeleteUser(id int) error {
+	log.Println("Service: DeleteUser")
+
+	// Convert string ID to MongoDB ObjectID
+	// objectID, err := strconv.Atoi(id)
+	// if err != nil {
+	// 	return err
+	// }
+	// Set up MongoDB query filter
+	filter := bson.M{"_id": id}
+
+	// Perform the delete operation on the "users" collection
+	collection := config.DB.Collection("users")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	// Check if any document was deleted
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("no user found with ID %s", id)
+	}
+
+	log.Printf("User with ID %s successfully deleted", id)
+	return nil
+}
+
+func IncrementMongoId() (int, error) {
+	collection := config.DB.Collection("counters")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := collection.UpdateOne(ctx, bson.M{"_id": "restaurant_id"}, bson.M{"$inc": bson.M{"seq": 1}})
+	if err != nil {
+		return 0, fmt.Errorf("there is an error in id updation:%v", err)
+	}
+	if res.ModifiedCount == 0 {
+		return 0, fmt.Errorf("there is an error in increament mongodb ID")
+	}
+	var result response.IdResponse
+	err = collection.FindOne(ctx, bson.M{"_id": "restaurant_id"}).Decode(&result)
+	if err != nil {
+		return 0, fmt.Errorf("error in getting sequence: %v", err)
+	}
+	return result.ID, nil
+}
+
+func DecrementMongoId() error {
+	collection := config.DB.Collection("menu")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := collection.UpdateOne(ctx, bson.M{"id": "restaurant_id"}, bson.M{"seq": bson.M{"$inc": -1}})
+	if err != nil {
+		return fmt.Errorf("there is an error in updation:%v", err)
+	}
+	if res.ModifiedCount == 0 {
+		return fmt.Errorf("there is an error in increament mongodb ID")
+	}
+	return nil
 }

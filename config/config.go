@@ -16,53 +16,6 @@ import (
 
 var DB *mongo.Database
 
-// func initializeCountersCollection() error {
-// 	countersCollection := DB.Collection("counters")
-// 	// Insert initial sequence values for different collections (e.g., "users", "admins")
-// 	_, err := countersCollection.InsertMany(context.Background(), []interface{}{
-// 		bson.M{"_id": "users", "sequence_value": 0},
-// 		bson.M{"_id": "admins", "sequence_value": 0},
-// 	})
-// 	return err
-// }
-
-// // GetNextSequence function retrieves the next sequence number
-// func GetNextSequence(collectionName string) (int, error) {
-// 	// Get a reference to the 'counters' collection
-// 	countersCollection := DB.Collection("counters")
-
-// 	// Find the document for the collection
-// 	filter := bson.M{"_id": collectionName}
-// 	update := bson.M{
-// 		"$inc": bson.M{"sequence_value": 1},
-// 	}
-
-// 	// Options to create the document if it doesn't exist
-// 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-
-// 	// Use FindAndModify to atomically update and retrieve the result
-// 	var result struct {
-// 		SequenceValue int `bson:"sequence_value"`
-// 	}
-
-// 	err := countersCollection.FindOneAndUpdate(
-// 		context.Background(),
-// 		filter,
-// 		update,
-// 		opts,
-// 	).Decode(&result)
-
-// 	if err != nil {
-// 		// If no document exists and insert operation fails, return error
-// 		if err == mongo.ErrNoDocuments {
-// 			return 0, errors.New("no documents found in counters collection")
-// 		}
-// 		return 0, err
-// 	}
-
-// 	return result.SequenceValue, nil
-// }
-
 // Load environment variables from .env file
 func loadEnv() {
 	if err := godotenv.Load(); err != nil {

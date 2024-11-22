@@ -25,11 +25,6 @@ type UserService struct {
 	db *mongo.Database
 }
 
-// func objectIDToInt(oid primitive.ObjectID) int {
-// 	hash := sha1.Sum(oid[:])
-// 	return int(binary.BigEndian.Uint32(hash[:4])) // Use first 4 bytes of the hash
-// }
-
 // new CreateUser function after using GetNextSequence
 func CreateUser(user *request.Request) (*response.Response, error) {
 	// Get the next sequence ID for the "users" collection
@@ -67,14 +62,6 @@ func CreateUser(user *request.Request) (*response.Response, error) {
 
 func (d *UserService) GetAllSUsers(recordSize int, offset int, gender string) ([]response.Response, error) {
 	log.Println("Service: GetAllSUsers")
-
-	// Set up the MongoDB query filter
-	// var filter bson.M
-	// if gender != "" {
-	// 	filter = bson.M{"gender": gender} // Filter by gender if provided
-	// } else {
-	// 	filter = bson.M{} // No filter if gender is not provided
-	// }
 
 	// Set up the MongoDB query options for pagination
 	options := options.Find()
@@ -117,12 +104,6 @@ func (d *UserService) GetAllSUsers(recordSize int, offset int, gender string) ([
 // GetUserByID retrieves a user by their ID from the MongoDB users collection.
 func (d *UserService) GetUserByID(id int) (*response.Response, error) {
 	log.Println("Service: GetUserByID")
-
-	// Convert string ID to MongoDB ObjectID
-	// objectID, err := primitive.ObjectIDFromHex(id)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	// Set up MongoDB query filter
 	filter := bson.M{"_id": id}
@@ -177,11 +158,6 @@ func (d *UserService) UpdateUser(req *request.Request) error {
 func (d *UserService) DeleteUser(id int) error {
 	log.Println("Service: DeleteUser")
 
-	// Convert string ID to MongoDB ObjectID
-	// objectID, err := strconv.Atoi(id)
-	// if err != nil {
-	// 	return err
-	// }
 	// Set up MongoDB query filter
 	filter := bson.M{"_id": id}
 

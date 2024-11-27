@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"bookstore/controller"
+	"bookstore/db_conn"
 	"bookstore/manager"
 	"bookstore/model"
 	"bookstore/route"
@@ -15,10 +16,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
-
 	// "go.mongodb.org/mongo-driver/mongo"
-
-	"bookstore/config"
 )
 
 func main() {
@@ -51,17 +49,12 @@ func main() {
 	adminManager := manager.NewAdminManager(movieService) // Manager handles business logic
 	controller.InitializeController(adminManager)         // Controller handles HTTP requests
 
-	config.ConnectDB()
+	db_conn.ConnectDB()
 
 	userService := &services.UserService{}
 	userManager := manager.NewUserManager(userService)
 
 	controller.SetManagers(userManager)
-	// MongoDB connection setup
-	// mongoClient := config.ConnectDB()                             // Assuming you have a ConnectDB() function in your config package
-	// usersCollection := config.GetCollection(mongoClient, "users") // Get "users" collection from MongoDB
-	// booksCollection := config.GetCollection(mongoClient, "books") // Get "books" collection from MongoDB
-	// fmt.Println(usersCollection)
 
 	// Create Echo instance and setup routes
 	e := echo.New()

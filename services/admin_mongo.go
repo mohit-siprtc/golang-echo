@@ -3,7 +3,7 @@
 package services
 
 import (
-	"bookstore/config"
+	"bookstore/db_conn"
 	"bookstore/request"
 	"bookstore/response"
 
@@ -37,7 +37,7 @@ func CreateUser(user *request.Request) (*response.Response, error) {
 	user.ID = nextID
 
 	// Insert the new user into the "users" collection
-	collection := config.DB.Collection("users")
+	collection := db_conn.DB.Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -71,7 +71,7 @@ func (d *UserService) GetAllSUsers(recordSize int, offset int, gender string) ([
 	}
 
 	// Perform the query on the "users" collection
-	collection := config.DB.Collection("users")
+	collection := db_conn.DB.Collection("users")
 	// cursor, err := collection.Find(context.Background(), filter, options)
 	cursor, err := collection.Find(context.Background(), bson.M{})
 
@@ -109,7 +109,7 @@ func (d *UserService) GetUserByID(id int) (*response.Response, error) {
 	filter := bson.M{"_id": id}
 
 	// Perform the query on the "users" collection
-	collection := config.DB.Collection("users")
+	collection := db_conn.DB.Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -138,7 +138,7 @@ func (d *UserService) UpdateUser(req *request.Request) error {
 	}}
 
 	// Perform the update operation on the "users" collection
-	collection := config.DB.Collection("users")
+	collection := db_conn.DB.Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -162,7 +162,7 @@ func (d *UserService) DeleteUser(id int) error {
 	filter := bson.M{"_id": id}
 
 	// Perform the delete operation on the "users" collection
-	collection := config.DB.Collection("users")
+	collection := db_conn.DB.Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -181,7 +181,7 @@ func (d *UserService) DeleteUser(id int) error {
 }
 
 func IncrementMongoId() (int, error) {
-	collection := config.DB.Collection("counters")
+	collection := db_conn.DB.Collection("counters")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	res, err := collection.UpdateOne(ctx, bson.M{"_id": "restaurant_id"}, bson.M{"$inc": bson.M{"seq": 1}})
@@ -200,7 +200,7 @@ func IncrementMongoId() (int, error) {
 }
 
 func DecrementMongoId() error {
-	collection := config.DB.Collection("menu")
+	collection := db_conn.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	res, err := collection.UpdateOne(ctx, bson.M{"id": "restaurant_id"}, bson.M{"seq": bson.M{"$inc": -1}})
